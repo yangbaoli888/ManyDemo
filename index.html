@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TOTP 二维码生成器 Demo</title>
+  <style>
+    :root { font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    body { margin: 0; padding: 24px; background: #f5f7fb; color: #1f2937; }
+    .container { max-width: 840px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08); }
+    h1 { margin-top: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 280px; gap: 24px; }
+    label { display: block; font-weight: 600; margin: 12px 0 6px; }
+    input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; }
+    button { margin-top: 16px; border: none; background: #2563eb; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    .muted { color: #6b7280; font-size: 13px; }
+    .qr-wrap { display: flex; justify-content: center; align-items: center; min-height: 260px; border: 1px dashed #d1d5db; border-radius: 12px; background: #fafafa; }
+    #uri { word-break: break-all; background: #f3f4f6; padding: 8px 10px; border-radius: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>TOTP 二维码生成器（6 位）</h1>
+    <p class="muted">生成符合 Google Authenticator 等应用可扫描的 TOTP 二维码。默认固定为 6 位数字。</p>
+    <div class="grid">
+      <section>
+        <label for="issuer">Issuer（发行方）</label>
+        <input id="issuer" value="ManyDemo" />
+
+        <label for="account">Account（账号）</label>
+        <input id="account" value="demo@example.com" />
+
+        <label for="secret">Secret（Base32）</label>
+        <input id="secret" value="JBSWY3DPEHPK3PXP" />
+
+        <button id="generateBtn" type="button">生成二维码</button>
+        <p class="muted">参数：digits=6, period=30, algorithm=SHA1</p>
+        <p id="uri"></p>
+      </section>
+      <aside>
+        <div class="qr-wrap">
+          <canvas id="qrcode" width="240" height="240" aria-label="TOTP QRCode"></canvas>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script>
+    const issuerInput = document.getElementById('issuer');
+    const accountInput = document.getElementById('account');
+    const secretInput = document.getElementById('secret');
+    const uriBox = document.getElementById('uri');
+    const qrCanvas = document.getElementById('qrcode');
+    const button = document.getElementById('generateBtn');
+
+    function buildTotpUri() {
+      const issuer = issuerInput.value.trim() || 'ManyDemo';
+      const account = accountInput.value.trim() || 'demo@example.com';
+      const secret = secretInput.value.trim().replace(/\s+/g, '');
+      const label = `${encodeURIComponent(issuer)}:${encodeURIComponent(account)}`;
+      const params = new URLSearchParams({
+        secret,
+        issuer,
+        algorithm: 'SHA1',
+        digits: '6',
+        period: '30'
+      });
+      return `otpauth://totp/${label}?${params.toString()}`;
+    }
+
+    async function generate() {
+      const uri = buildTotpUri();
+      uriBox.textContent = uri;
+      try {
+        await QRCode.toCanvas(qrCanvas, uri, {
+          width: 240,
+          margin: 1,
+          color: { dark: '#111827', light: '#ffffff' }
+        });
+      } catch (err) {
+        uriBox.textContent = `二维码生成失败: ${err.message}`;
+      }
+    }
+
+    button.addEventListener('click', generate);
+    generate();
+  </script>
+</body>
+</html>
