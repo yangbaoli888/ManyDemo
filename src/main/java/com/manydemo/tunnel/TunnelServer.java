@@ -14,13 +14,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * B 机器：中心协调与转发服务。
+ *
+ * 协议：
+ * 1) 客户端控制连接： CLIENT <clientId>      -> OK
+ * 2) 主动发起方数据入口： OPEN <targetClientId> -> WAIT <sessionId> | ERR <reason>
+ * 3) 被访问方回连数据： DATA <sessionId>
+ */
 public class TunnelServer {
     private final int controlPort;
     private final int relayPort;
     private final int dataPort;
 
-    private final Map<String, ControlSession> tunnels = new ConcurrentHashMap<>();
-    private final Map<String, Socket> pendingVisitors = new ConcurrentHashMap<>();
+    private final Map<String, ControlSession> clients = new ConcurrentHashMap<>();
+    private final Map<String, Socket> pendingInitiators = new ConcurrentHashMap<>();
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -30,8 +38,8 @@ public class TunnelServer {
         this.dataPort = dataPort;
     }
 
-    public void start() throws IOException {
-        System.out.printf("[B] TunnelServer started. control=%d relay=%d data=%d%n", controlPort, relayPort, dataPort);
+    public void start() {
+        System.out.printf("[B] server started control=%d relay=%d data=%d%n", controlPort, relayPort, dataPort);
         executor.submit(this::startControlListener);
         executor.submit(this::startRelayListener);
         executor.submit(this::startDataListener);
@@ -49,35 +57,36 @@ public class TunnelServer {
     }
 
     private void handleControlConnection(Socket socket) {
-        String tunnelId = null;
+        String clientId = null;
         try (socket;
              BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
              BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8))) {
 
-            String hello = reader.readLine();
-            if (hello == null || !hello.startsWith("HELLO ")) {
+            String line = reader.readLine();
+            if (line == null || !line.startsWith("CLIENT ")) {
                 return;
             }
 
-            String[] parts = hello.split("\\s+");
+            String[] parts = line.split("\\s+");
             if (parts.length < 2) {
                 return;
             }
-            tunnelId = parts[1];
-            tunnels.put(tunnelId, new ControlSession(tunnelId, writer));
+
+            clientId = parts[1];
+            clients.put(clientId, new ControlSession(clientId, writer));
             writer.write("OK\n");
             writer.flush();
-            System.out.printf("[B] Tunnel registered: %s%n", tunnelId);
+            System.out.printf("[B] client online: %s%n", clientId);
 
             while (reader.readLine() != null) {
-                // keep alive; no extra command for now
+                // 心跳可扩展
             }
         } catch (IOException ignored) {
             // disconnected
         } finally {
-            if (tunnelId != null) {
-                tunnels.remove(tunnelId);
-                System.out.printf("[B] Tunnel removed: %s%n", tunnelId);
+            if (clientId != null) {
+                clients.remove(clientId);
+                System.out.printf("[B] client offline: %s%n", clientId);
             }
         }
     }
@@ -85,48 +94,49 @@ public class TunnelServer {
     private void startRelayListener() {
         try (ServerSocket serverSocket = new ServerSocket(relayPort)) {
             while (true) {
-                Socket visitorSocket = serverSocket.accept();
-                executor.submit(() -> handleVisitor(visitorSocket));
+                Socket initiatorSocket = serverSocket.accept();
+                executor.submit(() -> handleOpenRequest(initiatorSocket));
             }
         } catch (IOException e) {
             throw new RuntimeException("relay listener stopped", e);
         }
     }
 
-    private void handleVisitor(Socket visitorSocket) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(visitorSocket.getInputStream(), StandardCharsets.UTF_8));
-             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(visitorSocket.getOutputStream(), StandardCharsets.UTF_8))) {
+    private void handleOpenRequest(Socket initiatorSocket) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(initiatorSocket.getInputStream(), StandardCharsets.UTF_8));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(initiatorSocket.getOutputStream(), StandardCharsets.UTF_8));
 
-            String openLine = reader.readLine();
-            if (openLine == null || !openLine.startsWith("OPEN ")) {
-                RelayUtil.closeQuietly(visitorSocket);
+            String line = reader.readLine();
+            if (line == null || !line.startsWith("OPEN ")) {
+                RelayUtil.closeQuietly(initiatorSocket);
                 return;
             }
 
-            String[] parts = openLine.split("\\s+");
+            String[] parts = line.split("\\s+");
             if (parts.length < 2) {
-                RelayUtil.closeQuietly(visitorSocket);
+                RelayUtil.closeQuietly(initiatorSocket);
                 return;
             }
 
-            String tunnelId = parts[1];
-            ControlSession controlSession = tunnels.get(tunnelId);
-            if (controlSession == null) {
-                writer.write("ERR tunnel_not_found\n");
+            String targetClientId = parts[1];
+            ControlSession target = clients.get(targetClientId);
+            if (target == null) {
+                writer.write("ERR target_offline\n");
                 writer.flush();
-                RelayUtil.closeQuietly(visitorSocket);
+                RelayUtil.closeQuietly(initiatorSocket);
                 return;
             }
 
             String sessionId = UUID.randomUUID().toString();
-            pendingVisitors.put(sessionId, visitorSocket);
-            writer.write("WAIT\n");
+            pendingInitiators.put(sessionId, initiatorSocket);
+            writer.write("WAIT " + sessionId + "\n");
             writer.flush();
 
-            controlSession.sendConnect(sessionId);
-            System.out.printf("[B] Visitor waiting for tunnel=%s session=%s%n", tunnelId, sessionId);
+            target.sendConnect(sessionId);
+            System.out.printf("[B] request routed target=%s session=%s%n", targetClientId, sessionId);
         } catch (IOException e) {
-            RelayUtil.closeQuietly(visitorSocket);
+            RelayUtil.closeQuietly(initiatorSocket);
         }
     }
 
@@ -144,33 +154,33 @@ public class TunnelServer {
     private void handleDataSocket(Socket dataSocket) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(dataSocket.getInputStream(), StandardCharsets.UTF_8));
-            String dataLine = reader.readLine();
-            if (dataLine == null || !dataLine.startsWith("DATA ")) {
+            String line = reader.readLine();
+            if (line == null || !line.startsWith("DATA ")) {
                 RelayUtil.closeQuietly(dataSocket);
                 return;
             }
 
-            String[] parts = dataLine.split("\\s+");
+            String[] parts = line.split("\\s+");
             if (parts.length < 2) {
                 RelayUtil.closeQuietly(dataSocket);
                 return;
             }
 
             String sessionId = parts[1];
-            Socket visitorSocket = pendingVisitors.remove(sessionId);
-            if (visitorSocket == null) {
+            Socket initiatorSocket = pendingInitiators.remove(sessionId);
+            if (initiatorSocket == null) {
                 RelayUtil.closeQuietly(dataSocket);
                 return;
             }
 
-            System.out.printf("[B] Relay established, session=%s%n", sessionId);
-            RelayUtil.bridge(visitorSocket, dataSocket, executor);
+            System.out.printf("[B] relay established session=%s%n", sessionId);
+            RelayUtil.bridge(initiatorSocket, dataSocket, executor);
         } catch (IOException e) {
             RelayUtil.closeQuietly(dataSocket);
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         if (args.length != 3) {
             System.out.println("Usage: TunnelServer <controlPort> <relayPort> <dataPort>");
             return;
@@ -185,18 +195,18 @@ public class TunnelServer {
     }
 
     private static final class ControlSession {
-        private final String tunnelId;
+        private final String clientId;
         private final BufferedWriter writer;
 
-        private ControlSession(String tunnelId, BufferedWriter writer) {
-            this.tunnelId = tunnelId;
+        private ControlSession(String clientId, BufferedWriter writer) {
+            this.clientId = clientId;
             this.writer = writer;
         }
 
         private synchronized void sendConnect(String sessionId) throws IOException {
             writer.write("CONNECT " + sessionId + "\n");
             writer.flush();
-            System.out.printf("[B] Notified tunnel=%s to serve session=%s%n", tunnelId, sessionId);
+            System.out.printf("[B] notified client=%s session=%s%n", clientId, sessionId);
         }
     }
 }
