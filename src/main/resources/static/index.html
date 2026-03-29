@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>男宝宝护理打卡</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+    <header class="hero">
+        <h1>👶🏻 男宝宝护理打卡</h1>
+        <p>快速记录：大便 / 小便 / 奶粉 / 母乳</p>
+    </header>
+
+    <section class="cards">
+        <button class="action poop" data-type="STOOL">💩 大便打卡</button>
+        <button class="action pee" data-type="URINE">💧 小便打卡</button>
+
+        <div class="card">
+            <h2>🍼 奶粉</h2>
+            <label>毫升 (ml)
+                <input id="formulaAmount" type="number" min="1" placeholder="例如 90">
+            </label>
+            <button class="action formula" data-type="FORMULA">记录奶粉</button>
+        </div>
+
+        <div class="card">
+            <h2>🤱 母乳</h2>
+            <label>时长 (分钟)
+                <input id="breastDuration" type="number" min="1" placeholder="例如 18">
+            </label>
+            <button class="action breast" data-type="BREASTFEEDING">记录母乳</button>
+        </div>
+    </section>
+
+    <p id="toast" class="toast"></p>
+
+    <section class="timeline">
+        <div class="timeline-header">
+            <h2>最近记录</h2>
+            <button id="refreshBtn" class="refresh">刷新</button>
+        </div>
+        <ul id="eventList"></ul>
+    </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
