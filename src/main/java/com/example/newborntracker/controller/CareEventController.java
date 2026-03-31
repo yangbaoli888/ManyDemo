@@ -5,10 +5,9 @@ import com.example.newborntracker.model.CareEvent;
 import com.example.newborntracker.model.EndRecordRequest;
 import com.example.newborntracker.model.QuickRecordRequest;
 import com.example.newborntracker.model.StartRecordRequest;
-import com.example.newborntracker.model.CareEvent;
-import com.example.newborntracker.model.RecordRequest;
 import com.example.newborntracker.model.TimelineDay;
 import com.example.newborntracker.service.CareEventService;
+import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,7 +25,8 @@ import java.util.Map;
 @RequestMapping("/api/events")
 public class CareEventController {
 
-    private final CareEventService service;
+    @Resource
+    private CareEventService service;
 
     public CareEventController(CareEventService service) {
         this.service = service;
@@ -51,9 +51,6 @@ public class CareEventController {
     @GetMapping("/status")
     public ActiveStatus status() {
         return service.status();
-    @PostMapping
-    public CareEvent record(@Valid @RequestBody RecordRequest request) {
-        return service.record(request);
     }
 
     @GetMapping

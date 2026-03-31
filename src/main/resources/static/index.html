@@ -20,16 +20,6 @@
         <div class="card">
             <h2>🍼 奶粉</h2>
             <label id="formulaAmountWrap" class="hidden">结束奶粉时填写毫升 (ml)
-        <p>快速记录：大便 / 小便 / 奶粉 / 母乳</p>
-    </header>
-
-    <section class="cards">
-        <button class="action poop" data-type="STOOL">💩 大便打卡</button>
-        <button class="action pee" data-type="URINE">💧 小便打卡</button>
-
-        <div class="card">
-            <h2>🍼 奶粉</h2>
-            <label>毫升 (ml)
                 <select id="formulaAmount">
                     <option value="">请选择</option>
                     <option value="30">30 ml</option>
@@ -45,16 +35,11 @@
                 </select>
             </label>
             <button id="formulaBtn" class="action formula">开始奶粉</button>
-            <button class="action formula" data-type="FORMULA">记录奶粉</button>
         </div>
 
         <div class="card">
             <h2>🤱 母乳</h2>
             <button id="breastBtn" class="action breast">开始母乳</button>
-            <label>时长 (分钟)
-                <input id="breastDuration" type="number" min="1" placeholder="例如 18">
-            </label>
-            <button class="action breast" data-type="BREASTFEEDING">记录母乳</button>
         </div>
     </section>
 
@@ -70,8 +55,6 @@
             <span class="badge badge-urine">💧 小便</span>
             <span class="badge badge-formula">🍼 奶粉（开始/结束）</span>
             <span class="badge badge-breast">🤱 母乳（开始/结束）</span>
-            <span class="badge badge-formula">🍼 奶粉</span>
-            <span class="badge badge-breast">🤱 母乳</span>
         </div>
         <div id="timelineContainer"></div>
     </section>

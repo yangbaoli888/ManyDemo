@@ -14,14 +14,6 @@ const typeStyleMap = {
 
 let activeStatus = { formulaStartedAt: null, breastfeedingStartedAt: null };
 
-
-const typeStyleMap = {
-  STOOL: { icon: '💩', label: '大便', iconClass: 'icon-stool', badge: '' },
-  URINE: { icon: '💧', label: '小便', iconClass: 'icon-urine', badge: '' },
-  FORMULA: { icon: '🍼', label: '奶粉', iconClass: 'icon-formula', badge: 'ml' },
-  BREASTFEEDING: { icon: '🤱', label: '母乳', iconClass: 'icon-breast', badge: '分钟' }
-};
-
 function showToast(message, isError = false) {
   toast.textContent = message;
   toast.style.color = isError ? '#d3366a' : '#2274d3';
@@ -61,14 +53,12 @@ async function start(type) {
 }
 
 async function end(type) {
-async function record(type) {
   const payload = { type };
 
   if (type === 'FORMULA') {
     const amount = Number(document.getElementById('formulaAmount').value);
     if (!amount || amount < 1) {
       showToast('结束奶粉前请先选择奶粉量', true);
-      showToast('请选择奶粉毫升数', true);
       return;
     }
     if (amount % 30 !== 0) {
@@ -101,29 +91,6 @@ async function refreshStatus() {
 
   const breastActive = !!activeStatus.breastfeedingStartedAt;
   breastBtn.textContent = breastActive ? '结束母乳' : '开始母乳';
-  if (type === 'BREASTFEEDING') {
-    const duration = Number(document.getElementById('breastDuration').value);
-    if (!duration || duration < 1) {
-      showToast('请输入母乳时长（分钟）', true);
-      return;
-    }
-    payload.durationMinutes = duration;
-  }
-
-  const response = await fetch('/api/events', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    showToast(data.message || '记录失败', true);
-    return;
-  }
-
-  showToast('记录成功 ✅');
-  await loadTimeline();
 }
 
 function formatTime(isoTime) {
@@ -154,10 +121,6 @@ function renderEventItem(event) {
     details = `开始 ${formatTime(event.startedAt)} · 结束 ${formatTime(event.endedAt)} · ${event.durationMinutes} 分钟`;
   } else {
     details = `打卡时间 ${formatTime(event.happenedAt)}`;
-    details = `${event.amountMl} ml`;
-  }
-  if (event.type === 'BREASTFEEDING') {
-    details = `${event.durationMinutes} 分钟`;
   }
 
   const wrapper = document.createElement('div');
@@ -168,9 +131,6 @@ function renderEventItem(event) {
       <span>${style.label}</span>
     </div>
     <span class="event-meta">${details}</span>
-      <span>${style.label}${details ? ` · ${details}` : ''}</span>
-    </div>
-    <span class="event-meta">${formatTime(event.happenedAt)}</span>
   `;
 
   return wrapper;
@@ -233,10 +193,3 @@ refreshBtn.addEventListener('click', async () => {
   await refreshStatus();
   await loadTimeline();
 })();
-document.querySelectorAll('.action[data-type]').forEach(button => {
-  button.addEventListener('click', () => record(button.dataset.type));
-});
-
-refreshBtn.addEventListener('click', loadTimeline);
-
-loadTimeline();
