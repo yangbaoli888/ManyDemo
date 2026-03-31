@@ -1,6 +1,19 @@
 const toast = document.getElementById('toast');
 const timelineContainer = document.getElementById('timelineContainer');
 const refreshBtn = document.getElementById('refreshBtn');
+const formulaBtn = document.getElementById('formulaBtn');
+const breastBtn = document.getElementById('breastBtn');
+const formulaAmountWrap = document.getElementById('formulaAmountWrap');
+
+const typeStyleMap = {
+  STOOL: { icon: '💩', label: '大便', iconClass: 'icon-stool' },
+  URINE: { icon: '💧', label: '小便', iconClass: 'icon-urine' },
+  FORMULA: { icon: '🍼', label: '奶粉', iconClass: 'icon-formula' },
+  BREASTFEEDING: { icon: '🤱', label: '母乳', iconClass: 'icon-breast' }
+};
+
+let activeStatus = { formulaStartedAt: null, breastfeedingStartedAt: null };
+
 
 const typeStyleMap = {
   STOOL: { icon: '💩', label: '大便', iconClass: 'icon-stool', badge: '' },
@@ -14,12 +27,47 @@ function showToast(message, isError = false) {
   toast.style.color = isError ? '#d3366a' : '#2274d3';
 }
 
+async function postJson(url, payload) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = response.status === 204 ? null : await response.json();
+  if (!response.ok) {
+    throw new Error((data && data.message) || '操作失败');
+  }
+  return data;
+}
+
+async function quickRecord(type) {
+  try {
+    await postJson('/api/events/quick', { type });
+    showToast('记录成功 ✅');
+    await loadTimeline();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function start(type) {
+  try {
+    await postJson('/api/events/start', { type });
+    showToast(`已开始${type === 'FORMULA' ? '奶粉' : '母乳'}打卡`);
+    await refreshStatus();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function end(type) {
 async function record(type) {
   const payload = { type };
 
   if (type === 'FORMULA') {
     const amount = Number(document.getElementById('formulaAmount').value);
     if (!amount || amount < 1) {
+      showToast('结束奶粉前请先选择奶粉量', true);
       showToast('请选择奶粉毫升数', true);
       return;
     }
@@ -30,6 +78,29 @@ async function record(type) {
     payload.amountMl = amount;
   }
 
+  try {
+    await postJson('/api/events/end', payload);
+    showToast(`已结束${type === 'FORMULA' ? '奶粉' : '母乳'}打卡`);
+    if (type === 'FORMULA') {
+      document.getElementById('formulaAmount').value = '';
+    }
+    await refreshStatus();
+    await loadTimeline();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function refreshStatus() {
+  const response = await fetch('/api/events/status');
+  activeStatus = await response.json();
+
+  const formulaActive = !!activeStatus.formulaStartedAt;
+  formulaBtn.textContent = formulaActive ? '结束奶粉' : '开始奶粉';
+  formulaAmountWrap.classList.toggle('hidden', !formulaActive);
+
+  const breastActive = !!activeStatus.breastfeedingStartedAt;
+  breastBtn.textContent = breastActive ? '结束母乳' : '开始母乳';
   if (type === 'BREASTFEEDING') {
     const duration = Number(document.getElementById('breastDuration').value);
     if (!duration || duration < 1) {
@@ -78,6 +149,11 @@ function renderEventItem(event) {
   let details = '';
 
   if (event.type === 'FORMULA') {
+    details = `开始 ${formatTime(event.startedAt)} · 结束 ${formatTime(event.endedAt)} · ${event.amountMl} ml`;
+  } else if (event.type === 'BREASTFEEDING') {
+    details = `开始 ${formatTime(event.startedAt)} · 结束 ${formatTime(event.endedAt)} · ${event.durationMinutes} 分钟`;
+  } else {
+    details = `打卡时间 ${formatTime(event.happenedAt)}`;
     details = `${event.amountMl} ml`;
   }
   if (event.type === 'BREASTFEEDING') {
@@ -89,6 +165,9 @@ function renderEventItem(event) {
   wrapper.innerHTML = `
     <div class="event-left">
       <span class="icon-pill ${style.iconClass}">${style.icon}</span>
+      <span>${style.label}</span>
+    </div>
+    <span class="event-meta">${details}</span>
       <span>${style.label}${details ? ` · ${details}` : ''}</span>
     </div>
     <span class="event-meta">${formatTime(event.happenedAt)}</span>
@@ -125,6 +204,35 @@ async function loadTimeline() {
   renderTimeline(items);
 }
 
+document.querySelectorAll('.action[data-quick-type]').forEach(button => {
+  button.addEventListener('click', () => quickRecord(button.dataset.quickType));
+});
+
+formulaBtn.addEventListener('click', async () => {
+  if (activeStatus.formulaStartedAt) {
+    await end('FORMULA');
+  } else {
+    await start('FORMULA');
+  }
+});
+
+breastBtn.addEventListener('click', async () => {
+  if (activeStatus.breastfeedingStartedAt) {
+    await end('BREASTFEEDING');
+  } else {
+    await start('BREASTFEEDING');
+  }
+});
+
+refreshBtn.addEventListener('click', async () => {
+  await refreshStatus();
+  await loadTimeline();
+});
+
+(async function init() {
+  await refreshStatus();
+  await loadTimeline();
+})();
 document.querySelectorAll('.action[data-type]').forEach(button => {
   button.addEventListener('click', () => record(button.dataset.type));
 });

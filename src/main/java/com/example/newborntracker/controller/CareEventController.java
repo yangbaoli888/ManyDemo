@@ -1,5 +1,10 @@
 package com.example.newborntracker.controller;
 
+import com.example.newborntracker.model.ActiveStatus;
+import com.example.newborntracker.model.CareEvent;
+import com.example.newborntracker.model.EndRecordRequest;
+import com.example.newborntracker.model.QuickRecordRequest;
+import com.example.newborntracker.model.StartRecordRequest;
 import com.example.newborntracker.model.CareEvent;
 import com.example.newborntracker.model.RecordRequest;
 import com.example.newborntracker.model.TimelineDay;
@@ -27,6 +32,25 @@ public class CareEventController {
         this.service = service;
     }
 
+    @PostMapping("/quick")
+    public CareEvent quickRecord(@Valid @RequestBody QuickRecordRequest request) {
+        return service.quickRecord(request.type());
+    }
+
+    @PostMapping("/start")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void start(@Valid @RequestBody StartRecordRequest request) {
+        service.start(request.type());
+    }
+
+    @PostMapping("/end")
+    public CareEvent end(@Valid @RequestBody EndRecordRequest request) {
+        return service.end(request.type(), request.amountMl());
+    }
+
+    @GetMapping("/status")
+    public ActiveStatus status() {
+        return service.status();
     @PostMapping
     public CareEvent record(@Valid @RequestBody RecordRequest request) {
         return service.record(request);

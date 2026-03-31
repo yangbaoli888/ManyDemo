@@ -6,6 +6,8 @@ public record CareEvent(
         long id,
         EventType type,
         Instant happenedAt,
+        Instant startedAt,
+        Instant endedAt,
         Integer amountMl,
         Integer durationMinutes
 ) {

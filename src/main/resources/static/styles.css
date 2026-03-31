@@ -183,3 +183,8 @@ select {
 @media (max-width: 420px) {
     .hero h1 { font-size: 1.25rem; }
 }
+
+
+.hidden {
+    display: none;
+}
