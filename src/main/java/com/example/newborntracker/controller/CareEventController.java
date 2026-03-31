@@ -2,6 +2,7 @@ package com.example.newborntracker.controller;
 
 import com.example.newborntracker.model.CareEvent;
 import com.example.newborntracker.model.RecordRequest;
+import com.example.newborntracker.model.TimelineDay;
 import com.example.newborntracker.service.CareEventService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -36,9 +37,20 @@ public class CareEventController {
         return service.all();
     }
 
+    @GetMapping("/timeline")
+    public List<TimelineDay> timeline() {
+        return service.timelineByDate();
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
+        return Map.of("message", ex.getMessage());
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public Map<String, String> handleIllegalState(IllegalStateException ex) {
         return Map.of("message", ex.getMessage());
     }
 }

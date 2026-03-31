@@ -1,12 +1,12 @@
 const toast = document.getElementById('toast');
-const eventList = document.getElementById('eventList');
+const timelineContainer = document.getElementById('timelineContainer');
 const refreshBtn = document.getElementById('refreshBtn');
 
-const labels = {
-  STOOL: '💩 大便',
-  URINE: '💧 小便',
-  FORMULA: '🍼 奶粉',
-  BREASTFEEDING: '🤱 母乳'
+const typeStyleMap = {
+  STOOL: { icon: '💩', label: '大便', iconClass: 'icon-stool', badge: '' },
+  URINE: { icon: '💧', label: '小便', iconClass: 'icon-urine', badge: '' },
+  FORMULA: { icon: '🍼', label: '奶粉', iconClass: 'icon-formula', badge: 'ml' },
+  BREASTFEEDING: { icon: '🤱', label: '母乳', iconClass: 'icon-breast', badge: '分钟' }
 };
 
 function showToast(message, isError = false) {
@@ -20,7 +20,11 @@ async function record(type) {
   if (type === 'FORMULA') {
     const amount = Number(document.getElementById('formulaAmount').value);
     if (!amount || amount < 1) {
-      showToast('请输入奶粉毫升数', true);
+      showToast('请选择奶粉毫升数', true);
+      return;
+    }
+    if (amount % 30 !== 0) {
+      showToast('奶粉毫升数必须是30的倍数', true);
       return;
     }
     payload.amountMl = amount;
@@ -48,44 +52,83 @@ async function record(type) {
   }
 
   showToast('记录成功 ✅');
-  await loadEvents();
+  await loadTimeline();
 }
 
-function formatEvent(event) {
-  const date = new Date(event.happenedAt);
-  const localTime = date.toLocaleString('zh-CN', { hour12: false });
-  const extra = event.type === 'FORMULA'
-    ? `，${event.amountMl} ml`
-    : event.type === 'BREASTFEEDING'
-      ? `，${event.durationMinutes} 分钟`
-      : '';
-
-  return `${labels[event.type] || event.type} · ${localTime}${extra}`;
+function formatTime(isoTime) {
+  return new Date(isoTime).toLocaleTimeString('zh-CN', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
-async function loadEvents() {
-  const response = await fetch('/api/events');
-  const items = await response.json();
-  eventList.innerHTML = '';
+function formatDate(dateText) {
+  const date = new Date(`${dateText}T00:00:00`);
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short'
+  });
+}
 
-  if (!items.length) {
-    const empty = document.createElement('li');
-    empty.textContent = '还没有记录，开始第一条吧！';
-    eventList.appendChild(empty);
+function renderEventItem(event) {
+  const style = typeStyleMap[event.type] || { icon: '📝', label: event.type, iconClass: '' };
+  let details = '';
+
+  if (event.type === 'FORMULA') {
+    details = `${event.amountMl} ml`;
+  }
+  if (event.type === 'BREASTFEEDING') {
+    details = `${event.durationMinutes} 分钟`;
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'event-item';
+  wrapper.innerHTML = `
+    <div class="event-left">
+      <span class="icon-pill ${style.iconClass}">${style.icon}</span>
+      <span>${style.label}${details ? ` · ${details}` : ''}</span>
+    </div>
+    <span class="event-meta">${formatTime(event.happenedAt)}</span>
+  `;
+
+  return wrapper;
+}
+
+function renderTimeline(days) {
+  timelineContainer.innerHTML = '';
+
+  if (!days.length) {
+    timelineContainer.innerHTML = '<div class="day-group">还没有记录，开始第一条吧！</div>';
     return;
   }
 
-  items.forEach(event => {
-    const li = document.createElement('li');
-    li.textContent = formatEvent(event);
-    eventList.appendChild(li);
+  days.forEach(day => {
+    const group = document.createElement('section');
+    group.className = 'day-group';
+
+    const title = document.createElement('h3');
+    title.className = 'day-title';
+    title.textContent = formatDate(day.date);
+    group.appendChild(title);
+
+    day.events.forEach(event => group.appendChild(renderEventItem(event)));
+    timelineContainer.appendChild(group);
   });
+}
+
+async function loadTimeline() {
+  const response = await fetch('/api/events/timeline');
+  const items = await response.json();
+  renderTimeline(items);
 }
 
 document.querySelectorAll('.action[data-type]').forEach(button => {
   button.addEventListener('click', () => record(button.dataset.type));
 });
 
-refreshBtn.addEventListener('click', loadEvents);
+refreshBtn.addEventListener('click', loadTimeline);
 
-loadEvents();
+loadTimeline();

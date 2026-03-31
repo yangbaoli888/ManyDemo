@@ -69,7 +69,8 @@ label {
     margin-bottom: 10px;
 }
 
-input {
+input,
+select {
     margin-top: 6px;
     width: 100%;
     border-radius: 12px;
@@ -91,27 +92,85 @@ input {
     align-items: center;
 }
 
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge-stool { background: #fde6d2; color: #8d4d14; }
+.badge-urine { background: #fff4bf; color: #8a6b00; }
+.badge-formula { background: #d8edff; color: #1d5f99; }
+.badge-breast { background: #ffe2ef; color: #9c2f63; }
+
+#timelineContainer {
+    margin-top: 12px;
+    display: grid;
+    gap: 10px;
+}
+
+.day-group {
+    background: #f8fcff;
+    border: 1px solid var(--soft);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.day-title {
+    margin: 0 0 8px;
+    color: #1f5e93;
+    font-size: 0.95rem;
+}
+
+.event-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border-radius: 10px;
+    background: #fff;
+    margin-bottom: 6px;
+}
+
+.event-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-pill {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+}
+
+.icon-stool { background: #fde6d2; }
+.icon-urine { background: #fff4bf; }
+.icon-formula { background: #d8edff; }
+.icon-breast { background: #ffe2ef; }
+
+.event-meta {
+    font-size: 0.9rem;
+    color: #557791;
+}
+
 .refresh {
     border: none;
     border-radius: 10px;
     background: var(--soft);
     color: var(--text);
     padding: 8px 12px;
-}
-
-#eventList {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 0;
-}
-
-#eventList li {
-    background: #f8fcff;
-    border: 1px solid var(--soft);
-    border-radius: 12px;
-    padding: 10px;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
 }
 
 .toast {
