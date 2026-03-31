@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>男宝宝护理打卡</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+    <header class="hero">
+        <h1>👶🏻 男宝宝护理打卡</h1>
+        <p>快速记录：大便 / 小便；奶粉与母乳采用开始/结束打卡</p>
+    </header>
+
+    <section class="cards">
+        <button class="action poop" data-quick-type="STOOL">💩 大便打卡</button>
+        <button class="action pee" data-quick-type="URINE">💧 小便打卡</button>
+
+        <div class="card">
+            <h2>🍼 奶粉</h2>
+            <label id="formulaAmountWrap" class="hidden">结束奶粉时填写毫升 (ml)
+                <select id="formulaAmount">
+                    <option value="">请选择</option>
+                    <option value="30">30 ml</option>
+                    <option value="60">60 ml</option>
+                    <option value="90">90 ml</option>
+                    <option value="120">120 ml</option>
+                    <option value="150">150 ml</option>
+                    <option value="180">180 ml</option>
+                    <option value="210">210 ml</option>
+                    <option value="240">240 ml</option>
+                    <option value="270">270 ml</option>
+                    <option value="300">300 ml</option>
+                </select>
+            </label>
+            <button id="formulaBtn" class="action formula">开始奶粉</button>
+        </div>
+
+        <div class="card">
+            <h2>🤱 母乳</h2>
+            <button id="breastBtn" class="action breast">开始母乳</button>
+        </div>
+    </section>
+
+    <p id="toast" class="toast"></p>
+
+    <section class="timeline">
+        <div class="timeline-header">
+            <h2>按时间查看打卡记录</h2>
+            <button id="refreshBtn" class="refresh">刷新</button>
+        </div>
+        <div class="legend">
+            <span class="badge badge-stool">💩 大便</span>
+            <span class="badge badge-urine">💧 小便</span>
+            <span class="badge badge-formula">🍼 奶粉（开始/结束）</span>
+            <span class="badge badge-breast">🤱 母乳（开始/结束）</span>
+        </div>
+        <div id="timelineContainer"></div>
+    </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
