@@ -4,6 +4,11 @@ import com.example.newborntracker.model.ActiveStatus;
 import com.example.newborntracker.model.CareEvent;
 import com.example.newborntracker.model.EventType;
 import com.example.newborntracker.model.TimelineDay;
+import com.example.newborntracker.model.CareEvent;
+import com.example.newborntracker.model.EventType;
+import com.example.newborntracker.model.RecordRequest;
+import com.example.newborntracker.model.TimelineDay;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,6 +63,14 @@ public class CareEventService {
                 null,
                 null,
                 null
+    public synchronized CareEvent record(RecordRequest request) {
+        validateByType(request);
+        CareEvent event = new CareEvent(
+                idCounter.getAndIncrement(),
+                request.type(),
+                Instant.now(),
+                request.amountMl(),
+                request.durationMinutes()
         );
         events.add(event);
         persist();
@@ -171,6 +184,11 @@ public class CareEventService {
             long maxIdFromEvents = events.stream().mapToLong(CareEvent::id).max().orElse(0L);
             long nextId = snapshot.nextId() == null ? (maxIdFromEvents + 1) : Math.max(snapshot.nextId(), maxIdFromEvents + 1);
             idCounter.set(nextId);
+            List<CareEvent> stored = objectMapper.readValue(storageFile.toFile(), new TypeReference<>() {});
+            events.clear();
+            events.addAll(stored);
+            long maxId = stored.stream().mapToLong(CareEvent::id).max().orElse(0L);
+            idCounter.set(maxId + 1);
         } catch (IOException e) {
             throw new IllegalStateException("加载打卡记录失败", e);
         }
@@ -184,6 +202,7 @@ public class CareEventService {
             }
             StorageSnapshot snapshot = new StorageSnapshot(new ArrayList<>(events), new EnumMap<>(inProgress), idCounter.get());
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(storageFile.toFile(), snapshot);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(storageFile.toFile(), events);
         } catch (IOException e) {
             throw new IllegalStateException("保存打卡记录失败", e);
         }
@@ -194,5 +213,27 @@ public class CareEventService {
             Map<EventType, Instant> inProgress,
             Long nextId
     ) {
+    private void validateByType(RecordRequest request) {
+        EventType type = request.type();
+
+        if (type == EventType.FORMULA && request.amountMl() == null) {
+            throw new IllegalArgumentException("奶粉需要填写毫升数");
+        }
+        if (type == EventType.FORMULA && request.amountMl() % 30 != 0) {
+            throw new IllegalArgumentException("奶粉毫升数必须为30的倍数");
+        }
+        if (type == EventType.BREASTFEEDING && request.durationMinutes() == null) {
+            throw new IllegalArgumentException("母乳需要填写时长（分钟）");
+        }
+        if ((type == EventType.STOOL || type == EventType.URINE)
+                && (request.amountMl() != null || request.durationMinutes() != null)) {
+            throw new IllegalArgumentException("大小便只记录时间，不需要填写量或时长");
+        }
+        if (type == EventType.FORMULA && request.durationMinutes() != null) {
+            throw new IllegalArgumentException("奶粉记录不需要填写时长");
+        }
+        if (type == EventType.BREASTFEEDING && request.amountMl() != null) {
+            throw new IllegalArgumentException("母乳记录不需要填写毫升数");
+        }
     }
 }

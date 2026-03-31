@@ -5,6 +5,8 @@ import com.example.newborntracker.model.CareEvent;
 import com.example.newborntracker.model.EndRecordRequest;
 import com.example.newborntracker.model.QuickRecordRequest;
 import com.example.newborntracker.model.StartRecordRequest;
+import com.example.newborntracker.model.CareEvent;
+import com.example.newborntracker.model.RecordRequest;
 import com.example.newborntracker.model.TimelineDay;
 import com.example.newborntracker.service.CareEventService;
 import jakarta.validation.Valid;
@@ -49,6 +51,9 @@ public class CareEventController {
     @GetMapping("/status")
     public ActiveStatus status() {
         return service.status();
+    @PostMapping
+    public CareEvent record(@Valid @RequestBody RecordRequest request) {
+        return service.record(request);
     }
 
     @GetMapping

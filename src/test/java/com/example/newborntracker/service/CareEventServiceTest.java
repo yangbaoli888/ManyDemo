@@ -1,6 +1,7 @@
 package com.example.newborntracker.service;
 
 import com.example.newborntracker.model.EventType;
+import com.example.newborntracker.model.RecordRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -25,6 +26,9 @@ class CareEventServiceTest {
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.end(EventType.FORMULA, 100)
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.record(new RecordRequest(EventType.FORMULA, 100, null))
         );
 
         assertEquals("奶粉毫升数必须为30的倍数", ex.getMessage());
@@ -37,6 +41,7 @@ class CareEventServiceTest {
         CareEventService first = new CareEventService(new ObjectMapper(), file.toString());
         first.init();
         first.quickRecord(EventType.URINE);
+        first.record(new RecordRequest(EventType.URINE, null, null));
 
         CareEventService second = new CareEventService(new ObjectMapper(), file.toString());
         second.init();
