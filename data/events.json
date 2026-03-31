@@ -1,1 +1,53 @@
-{}
+{
+  "events" : [ {
+    "id" : 6,
+    "type" : "STOOL",
+    "happenedAt" : "2026-03-31T05:35:45.902697Z",
+    "startedAt" : null,
+    "endedAt" : null,
+    "amountMl" : null,
+    "durationMinutes" : null
+  }, {
+    "id" : 7,
+    "type" : "BREASTFEEDING",
+    "happenedAt" : "2026-03-31T05:48:04.059819Z",
+    "startedAt" : "2026-03-31T05:28:06.099376Z",
+    "endedAt" : "2026-03-31T05:48:04.059819Z",
+    "amountMl" : null,
+    "durationMinutes" : 19
+  }, {
+    "id" : 8,
+    "type" : "BREASTFEEDING",
+    "happenedAt" : "2026-03-31T06:09:25.147141Z",
+    "startedAt" : "2026-03-31T05:59:03.289372Z",
+    "endedAt" : "2026-03-31T06:09:25.147141Z",
+    "amountMl" : null,
+    "durationMinutes" : 10
+  }, {
+    "id" : 9,
+    "type" : "FORMULA",
+    "happenedAt" : "2026-03-31T06:40:07.457109Z",
+    "startedAt" : "2026-03-31T06:40:01.312503Z",
+    "endedAt" : "2026-03-31T06:40:07.457109Z",
+    "amountMl" : 30,
+    "durationMinutes" : null
+  }, {
+    "id" : 10,
+    "type" : "BREASTFEEDING",
+    "happenedAt" : "2026-03-31T07:46:07.740842Z",
+    "startedAt" : "2026-03-31T07:20:06.722446Z",
+    "endedAt" : "2026-03-31T07:46:07.740842Z",
+    "amountMl" : null,
+    "durationMinutes" : 26
+  }, {
+    "id" : 11,
+    "type" : "FORMULA",
+    "happenedAt" : "2026-03-31T09:42:37.051577Z",
+    "startedAt" : "2026-03-31T09:42:30.195991Z",
+    "endedAt" : "2026-03-31T09:42:37.051577Z",
+    "amountMl" : 60,
+    "durationMinutes" : null
+  } ],
+  "inProgress" : { },
+  "nextId" : 12
+}
