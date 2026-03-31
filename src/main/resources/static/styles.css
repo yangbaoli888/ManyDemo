@@ -50,7 +50,7 @@ body {
     font-weight: 700;
 }
 
-.poop, .pee, .formula, .breast {
+.poop, .pee, .formula, .breast, .weight {
     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
 }
 
@@ -110,6 +110,7 @@ select {
 .badge-urine { background: #fff4bf; color: #8a6b00; }
 .badge-formula { background: #d8edff; color: #1d5f99; }
 .badge-breast { background: #ffe2ef; color: #9c2f63; }
+.badge-weight { background: #ece7ff; color: #5a49a4; }
 
 #timelineContainer {
     margin-top: 12px;
@@ -159,6 +160,7 @@ select {
 .icon-urine { background: #fff4bf; }
 .icon-formula { background: #d8edff; }
 .icon-breast { background: #ffe2ef; }
+.icon-weight { background: #ece7ff; }
 
 .event-meta {
     font-size: 0.9rem;
@@ -187,4 +189,20 @@ select {
 
 .hidden {
     display: none;
+}
+
+
+#statsContainer {
+    margin-top: 10px;
+    display: grid;
+    gap: 10px;
+}
+
+.stats-item {
+    background: #f8fcff;
+    border: 1px solid var(--soft);
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 0.9rem;
+    line-height: 1.6;
 }

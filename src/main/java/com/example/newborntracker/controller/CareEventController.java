@@ -2,12 +2,13 @@ package com.example.newborntracker.controller;
 
 import com.example.newborntracker.model.ActiveStatus;
 import com.example.newborntracker.model.CareEvent;
+import com.example.newborntracker.model.DailyStats;
 import com.example.newborntracker.model.EndRecordRequest;
 import com.example.newborntracker.model.QuickRecordRequest;
 import com.example.newborntracker.model.StartRecordRequest;
 import com.example.newborntracker.model.TimelineDay;
+import com.example.newborntracker.model.WeightRecordRequest;
 import com.example.newborntracker.service.CareEventService;
-import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,8 +26,7 @@ import java.util.Map;
 @RequestMapping("/api/events")
 public class CareEventController {
 
-    @Resource
-    private CareEventService service;
+    private final CareEventService service;
 
     public CareEventController(CareEventService service) {
         this.service = service;
@@ -35,6 +35,11 @@ public class CareEventController {
     @PostMapping("/quick")
     public CareEvent quickRecord(@Valid @RequestBody QuickRecordRequest request) {
         return service.quickRecord(request.type());
+    }
+
+    @PostMapping("/weight")
+    public CareEvent recordWeight(@Valid @RequestBody WeightRecordRequest request) {
+        return service.recordWeight(request.weightGrams());
     }
 
     @PostMapping("/start")
@@ -51,6 +56,11 @@ public class CareEventController {
     @GetMapping("/status")
     public ActiveStatus status() {
         return service.status();
+    }
+
+    @GetMapping("/stats")
+    public List<DailyStats> stats() {
+        return service.dailyStats();
     }
 
     @GetMapping

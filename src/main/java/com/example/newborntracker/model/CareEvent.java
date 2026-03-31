@@ -9,6 +9,7 @@ public record CareEvent(
         Instant startedAt,
         Instant endedAt,
         Integer amountMl,
-        Integer durationMinutes
+        Integer durationMinutes,
+        Integer weightGrams
 ) {
 }

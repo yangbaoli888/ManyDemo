@@ -4,5 +4,6 @@ public enum EventType {
     STOOL,
     URINE,
     FORMULA,
-    BREASTFEEDING
+    BREASTFEEDING,
+    WEIGHT
 }

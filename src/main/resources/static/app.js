@@ -1,15 +1,19 @@
 const toast = document.getElementById('toast');
 const timelineContainer = document.getElementById('timelineContainer');
+const statsContainer = document.getElementById('statsContainer');
 const refreshBtn = document.getElementById('refreshBtn');
 const formulaBtn = document.getElementById('formulaBtn');
 const breastBtn = document.getElementById('breastBtn');
+const weightBtn = document.getElementById('weightBtn');
 const formulaAmountWrap = document.getElementById('formulaAmountWrap');
+const breastAmountWrap = document.getElementById('breastAmountWrap');
 
 const typeStyleMap = {
   STOOL: { icon: '💩', label: '大便', iconClass: 'icon-stool' },
   URINE: { icon: '💧', label: '小便', iconClass: 'icon-urine' },
   FORMULA: { icon: '🍼', label: '奶粉', iconClass: 'icon-formula' },
-  BREASTFEEDING: { icon: '🤱', label: '母乳', iconClass: 'icon-breast' }
+  BREASTFEEDING: { icon: '🤱', label: '母乳', iconClass: 'icon-breast' },
+  WEIGHT: { icon: '⚖️', label: '体重', iconClass: 'icon-weight' }
 };
 
 let activeStatus = { formulaStartedAt: null, breastfeedingStartedAt: null };
@@ -37,6 +41,25 @@ async function quickRecord(type) {
     await postJson('/api/events/quick', { type });
     showToast('记录成功 ✅');
     await loadTimeline();
+    await loadStats();
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function recordWeight() {
+  const grams = Number(document.getElementById('weightInput').value);
+  if (!grams || grams < 1) {
+    showToast('请输入有效体重（克）', true);
+    return;
+  }
+
+  try {
+    await postJson('/api/events/weight', { weightGrams: grams });
+    showToast('体重记录成功 ✅');
+    document.getElementById('weightInput').value = '';
+    await loadTimeline();
+    await loadStats();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -68,14 +91,25 @@ async function end(type) {
     payload.amountMl = amount;
   }
 
+  if (type === 'BREASTFEEDING') {
+    const optionalAmount = Number(document.getElementById('breastAmount').value);
+    if (optionalAmount > 0) {
+      payload.amountMl = optionalAmount;
+    }
+  }
+
   try {
     await postJson('/api/events/end', payload);
     showToast(`已结束${type === 'FORMULA' ? '奶粉' : '母乳'}打卡`);
     if (type === 'FORMULA') {
       document.getElementById('formulaAmount').value = '';
     }
+    if (type === 'BREASTFEEDING') {
+      document.getElementById('breastAmount').value = '';
+    }
     await refreshStatus();
     await loadTimeline();
+    await loadStats();
   } catch (err) {
     showToast(err.message, true);
   }
@@ -91,6 +125,7 @@ async function refreshStatus() {
 
   const breastActive = !!activeStatus.breastfeedingStartedAt;
   breastBtn.textContent = breastActive ? '结束母乳' : '开始母乳';
+  breastAmountWrap.classList.toggle('hidden', !breastActive);
 }
 
 function formatTime(isoTime) {
@@ -118,7 +153,10 @@ function renderEventItem(event) {
   if (event.type === 'FORMULA') {
     details = `开始 ${formatTime(event.startedAt)} · 结束 ${formatTime(event.endedAt)} · ${event.amountMl} ml`;
   } else if (event.type === 'BREASTFEEDING') {
-    details = `开始 ${formatTime(event.startedAt)} · 结束 ${formatTime(event.endedAt)} · ${event.durationMinutes} 分钟`;
+    const ml = event.amountMl ? ` · ${event.amountMl} ml` : '';
+    details = `开始 ${formatTime(event.startedAt)} · 结束 ${formatTime(event.endedAt)} · ${event.durationMinutes} 分钟${ml}`;
+  } else if (event.type === 'WEIGHT') {
+    details = `记录时间 ${formatTime(event.happenedAt)} · ${event.weightGrams} g`;
   } else {
     details = `打卡时间 ${formatTime(event.happenedAt)}`;
   }
@@ -158,15 +196,47 @@ function renderTimeline(days) {
   });
 }
 
+function renderStats(days) {
+  statsContainer.innerHTML = '';
+
+  if (!days.length) {
+    statsContainer.innerHTML = '<div class="stats-item">暂无统计数据</div>';
+    return;
+  }
+
+  days.forEach(day => {
+    const div = document.createElement('div');
+    div.className = 'stats-item';
+    div.innerHTML = `
+      <strong>${formatDate(day.date)}</strong><br>
+      💩 大便次数：${day.stoolCount}<br>
+      💧 小便次数：${day.urineCount}<br>
+      🍼 奶粉总量：${day.formulaTotalMl} ml<br>
+      🤱 母乳总时长：${day.breastfeedingTotalMinutes} 分钟<br>
+      🤱 母乳总量：${day.breastfeedingTotalMl} ml<br>
+      ⚖️ 体重记录次数：${day.weightCount}${day.latestWeightGrams ? `（最新 ${day.latestWeightGrams} g）` : ''}
+    `;
+    statsContainer.appendChild(div);
+  });
+}
+
 async function loadTimeline() {
   const response = await fetch('/api/events/timeline');
   const items = await response.json();
   renderTimeline(items);
 }
 
+async function loadStats() {
+  const response = await fetch('/api/events/stats');
+  const items = await response.json();
+  renderStats(items);
+}
+
 document.querySelectorAll('.action[data-quick-type]').forEach(button => {
   button.addEventListener('click', () => quickRecord(button.dataset.quickType));
 });
+
+weightBtn.addEventListener('click', recordWeight);
 
 formulaBtn.addEventListener('click', async () => {
   if (activeStatus.formulaStartedAt) {
@@ -187,9 +257,11 @@ breastBtn.addEventListener('click', async () => {
 refreshBtn.addEventListener('click', async () => {
   await refreshStatus();
   await loadTimeline();
+  await loadStats();
 });
 
 (async function init() {
   await refreshStatus();
   await loadTimeline();
+  await loadStats();
 })();

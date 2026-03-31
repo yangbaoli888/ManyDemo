@@ -2,6 +2,7 @@ package com.example.newborntracker.service;
 
 import com.example.newborntracker.model.ActiveStatus;
 import com.example.newborntracker.model.CareEvent;
+import com.example.newborntracker.model.DailyStats;
 import com.example.newborntracker.model.EventType;
 import com.example.newborntracker.model.TimelineDay;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,7 +58,27 @@ public class CareEventService {
                 null,
                 null,
                 null,
+                null,
                 null
+        );
+        events.add(event);
+        persist();
+        return event;
+    }
+
+    public synchronized CareEvent recordWeight(Integer weightGrams) {
+        if (weightGrams == null || weightGrams <= 0) {
+            throw new IllegalArgumentException("体重必须大于0克");
+        }
+        CareEvent event = new CareEvent(
+                idCounter.getAndIncrement(),
+                EventType.WEIGHT,
+                Instant.now(),
+                null,
+                null,
+                null,
+                null,
+                weightGrams
         );
         events.add(event);
         persist();
@@ -94,9 +115,11 @@ public class CareEventService {
                     startedAt,
                     endedAt,
                     amountMl,
+                    null,
                     null
             );
         } else {
+            Integer breastMilkMl = (amountMl != null && amountMl > 0) ? amountMl : null;
             long minutes = Math.max(1, Duration.between(startedAt, endedAt).toMinutes());
             event = new CareEvent(
                     idCounter.getAndIncrement(),
@@ -104,8 +127,9 @@ public class CareEventService {
                     endedAt,
                     startedAt,
                     endedAt,
-                    null,
-                    (int) minutes
+                    breastMilkMl,
+                    (int) minutes,
+                    null
             );
         }
 
@@ -136,6 +160,43 @@ public class CareEventService {
         List<TimelineDay> timeline = new ArrayList<>();
         grouped.forEach((date, eventsInDay) -> timeline.add(new TimelineDay(date, eventsInDay)));
         return timeline;
+    }
+
+    public List<DailyStats> dailyStats() {
+        Map<LocalDate, DailyStatsAccumulator> grouped = new LinkedHashMap<>();
+
+        for (CareEvent event : all()) {
+            LocalDate date = event.happenedAt().atZone(ZoneId.systemDefault()).toLocalDate();
+            DailyStatsAccumulator acc = grouped.computeIfAbsent(date, ignored -> new DailyStatsAccumulator());
+
+            switch (event.type()) {
+                case STOOL -> acc.stoolCount++;
+                case URINE -> acc.urineCount++;
+                case FORMULA -> acc.formulaTotalMl += (event.amountMl() == null ? 0 : event.amountMl());
+                case BREASTFEEDING -> {
+                    acc.breastfeedingTotalMinutes += (event.durationMinutes() == null ? 0 : event.durationMinutes());
+                    acc.breastfeedingTotalMl += (event.amountMl() == null ? 0 : event.amountMl());
+                }
+                case WEIGHT -> {
+                    acc.weightCount++;
+                    acc.latestWeightGrams = event.weightGrams();
+                }
+            }
+        }
+
+        List<DailyStats> result = new ArrayList<>();
+        grouped.forEach((date, acc) -> result.add(new DailyStats(
+                date,
+                acc.stoolCount,
+                acc.urineCount,
+                acc.formulaTotalMl,
+                acc.breastfeedingTotalMinutes,
+                acc.breastfeedingTotalMl,
+                acc.weightCount,
+                acc.latestWeightGrams
+        )));
+
+        return result;
     }
 
     private void validateFeedingType(EventType type) {
@@ -194,5 +255,15 @@ public class CareEventService {
             Map<EventType, Instant> inProgress,
             Long nextId
     ) {
+    }
+
+    private static class DailyStatsAccumulator {
+        int stoolCount;
+        int urineCount;
+        int formulaTotalMl;
+        int breastfeedingTotalMinutes;
+        int breastfeedingTotalMl;
+        int weightCount;
+        Integer latestWeightGrams;
     }
 }

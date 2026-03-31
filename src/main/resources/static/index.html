@@ -39,7 +39,18 @@
 
         <div class="card">
             <h2>🤱 母乳</h2>
+            <label id="breastAmountWrap" class="hidden">结束母乳可选填写毫升 (ml)
+                <input id="breastAmount" type="number" min="1" placeholder="可不填">
+            </label>
             <button id="breastBtn" class="action breast">开始母乳</button>
+        </div>
+
+        <div class="card">
+            <h2>⚖️ 每日体重</h2>
+            <label>体重 (克)
+                <input id="weightInput" type="number" min="1" placeholder="例如 4200">
+            </label>
+            <button id="weightBtn" class="action weight">记录体重</button>
         </div>
     </section>
 
@@ -55,8 +66,14 @@
             <span class="badge badge-urine">💧 小便</span>
             <span class="badge badge-formula">🍼 奶粉（开始/结束）</span>
             <span class="badge badge-breast">🤱 母乳（开始/结束）</span>
+            <span class="badge badge-weight">⚖️ 体重</span>
         </div>
         <div id="timelineContainer"></div>
+    </section>
+
+    <section class="timeline">
+        <h2>按天统计</h2>
+        <div id="statsContainer"></div>
     </section>
 </main>
 <script src="app.js"></script>
