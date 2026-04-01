@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝宝护理打卡</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+    <header class="hero">
+        <h1>👶🏻 宝宝护理打卡</h1>
+        <p>快速记录：大便 / 小便；奶粉与母乳采用开始/结束打卡</p>
+    </header>
+
+    <section class="cards">
+        <button class="action poop" data-quick-type="STOOL">💩 大便打卡</button>
+        <button class="action pee" data-quick-type="URINE">💧 小便打卡</button>
+
+        <div class="card">
+            <h2>🍼 奶粉</h2>
+            <label id="formulaAmountWrap" class="hidden">结束奶粉时填写毫升 (ml)
+                <select id="formulaAmount">
+                    <option value="">请选择</option>
+                    <option value="30">30 ml</option>
+                    <option value="60">60 ml</option>
+                    <option value="90">90 ml</option>
+                    <option value="120">120 ml</option>
+                    <option value="150">150 ml</option>
+                    <option value="180">180 ml</option>
+                    <option value="210">210 ml</option>
+                    <option value="240">240 ml</option>
+                    <option value="270">270 ml</option>
+                    <option value="300">300 ml</option>
+                </select>
+            </label>
+            <button id="formulaBtn" class="action formula">开始奶粉</button>
+        </div>
+
+        <div class="card">
+            <h2>🤱 母乳</h2>
+            <label id="breastAmountWrap" class="hidden">结束母乳可选填写毫升 (ml)
+                <input id="breastAmount" type="number" min="1" placeholder="可不填">
+            </label>
+            <button id="breastBtn" class="action breast">开始母乳</button>
+        </div>
+
+        <div class="card">
+            <h2>⚖️ 每日体重</h2>
+            <label>体重 (克)
+                <input id="weightInput" type="number" min="1" placeholder="例如 4200">
+            </label>
+            <button id="weightBtn" class="action weight">记录体重</button>
+        </div>
+    </section>
+
+    <p id="toast" class="toast"></p>
+
+    <section class="timeline">
+        <button id="toggleTimelineSection" class="section-toggle" type="button">▼ 打卡记录</button>
+        <div id="timelineSectionBody">
+            <div class="legend">
+                <span class="badge badge-stool">💩 大便</span>
+                <span class="badge badge-urine">💧 小便</span>
+                <span class="badge badge-formula">🍼 奶粉（开始/结束）</span>
+                <span class="badge badge-breast">🤱 母乳（开始/结束）</span>
+                <span class="badge badge-weight">⚖️ 体重</span>
+            </div>
+            <div id="timelineContainer"></div>
+        </div>
+    </section>
+
+    <section class="timeline">
+        <button id="toggleStatsSection" class="section-toggle" type="button">▼ 按天统计</button>
+        <div id="statsSectionBody">
+            <div id="statsContainer"></div>
+        </div>
+    </section>
+
+    <button id="refreshBtn" class="refresh">刷新数据</button>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
